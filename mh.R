@@ -1,4 +1,5 @@
-run.mh <- function(x0, niter, rproposal, dproposal, target){
+
+run.mh <- function(x0, niter, rproposal, dproposal, target, burnin=0){
   X <- c()
   L <- c()
   R <- c()
@@ -22,5 +23,72 @@ run.mh <- function(x0, niter, rproposal, dproposal, target){
 
   acceptance.rate <- length(unique(X))/ length(X)
   
-  return(list(cbind(X, L, R), acceptance.rate))
+  return(list(cbind(X[seq(burnin+1, niter)], L[seq(burnin+1,niter)], R[seq(burnin+1,niter)]), acceptance.rate))
+}
+
+
+run.mv.mh <- function(x0, niter, rproposal, dproposal, target, burnin=0){
+  X <- NULL
+  L <- NULL
+  R <- c()
+  X.tm1 <- x0
+  acceptance.count <- 0
+
+  for(i in seq(niter)){
+    
+    # proposal and acceptance
+    L.t <- rproposal(X.tm1)
+    r <- (target(L.t) * dproposal(X.tm1, L.t)) / (target(X.tm1) * dproposal(L.t, X.tm1))
+    
+    X <- rbind(X, X.tm1)
+    L <- rbind(L, L.t)
+
+    R <- c(R, min(r,1))
+    
+    if(runif(1) < r) {
+      acceptance.count <- acceptance.count + 1
+      X.tm1 <- L.t
+    }
+  }
+  dimnames(X) <- NULL
+  dimnames(L) <- NULL
+
+  X <- X[seq(burnin+1, niter),]
+  L <- L[seq(burnin+1, niter),]
+  R <- R[seq(burnin+1, niter)]
+  
+  return(list(X=X, L=L, R=R, acceptance.rate = acceptance.count / niter))
+}
+
+
+.get.constrained.target <- function(constraint.fn, original.target){
+  force(constraint.fn)
+  constrained.target <- function(x){
+    if(constraint.fn(x)){
+      return(original.target(x))
+    } else {
+      return(0)
+    }
+  }
+  return(constrained.target)
+}
+
+
+.get.constraint.fn <- function(clust, cfn){
+  force(clust)
+  fn <- function(x){
+    return(cfn(x) == clust)
+  }
+  return(fn)
+}
+
+# cfn is the cluster indicator function
+# K is the number of clusters
+get.constrained.targets <- function(K, cfn, original.target){
+  res <- vector('list',K)
+  for(i in seq(K)){
+    res[[i]] <- .get.constrained.target(.get.constraint.fn(i, cfn), original.target)
+    force(res)
+  }
+  return(res)
 }

@@ -1,4 +1,5 @@
 
+require(ggplot2)
 
 # # # # # # #
 # FUNCTIONS #
@@ -19,6 +20,47 @@ add.rects <- function(clust.ints, my.colors){
   }
 }
 
+# color scheme with transparency
+my.cols <- c(rgb(1,0,0,alpha=0.2), rgb(0,1,0, alpha=0.2), rgb(0,0,1, alpha=0.2))
+
+
+# plot partition (for 2D data)
+get.partition.colors <- function(xs, ys, cluster.fn){
+  res <- expand.grid(xs, ys)
+  res <- cbind(res, apply(res, 1, cluster.fn))
+  names(res) <- NULL
+  return(res)
+}
+
+
+# plots the contours of a bivariate density 
+plot.bivariate.density <- function(fn, x1range=c(-10,10), x2range=c(-10,10), bins.per.dim=100){
+  x1 <- seq(x1range[1], x1range[2], length.out = bins.per.dim)
+  x2 <- seq(x2range[1], x2range[2], length.out = bins.per.dim)
+  
+  z2 <- matrix(0, nrow=bins.per.dim, ncol=bins.per.dim)
+  
+  for(i in seq(1,bins.per.dim)){
+    for(j in seq(1,bins.per.dim)){
+      z2[i,j] <- fn(c(x1[i], x2[j]))
+    }
+  }
+  
+  contour(list(x=x1,y=x2,z=z2), col='red',add=F)
+
+}
+
+plot.cluster.and.target <- function(cluster.fn, rtarget, x1range=c(-10,10), x2range=c(-10,10), target.draws=10000){
+  pcolors <- get.partition.colors(seq(x1range[1],x1range[2]), seq(x2range[1], x2range[2]), cluster.fn)
+  dt <- data.frame(pcolors)
+  names(dt) <- c('x','y','z')
+
+  dt2 <- data.frame(rtarget(target.draws))
+  names(dt2) <- c('x','y')
+
+  g <- ggplot(data=dt2, aes(x,y)) + stat_density2d() + geom_tile(data=dt, aes(x,y,fill=factor(z), alpha=0.2))
+  return(g)
+}
 
 # # # # # # #
 # EXAMPLES  #
@@ -47,3 +89,17 @@ add.rects <- function(clust.ints, my.colors){
 #  S ys.sleep(0.5)
 # }
 
+#
+# cfn <- proj.clustering(X, 1, 2)
+# bli <- get.partition.colors(seq(-1, 5), seq(-1,5), cfn)
+# dt <- data.frame(bli)
+# names(dt) <- c('x','y','z')
+# qplot(x,y,fill=factor(z), data=dt, geom="tile")
+
+
+#
+#
+#
+#
+#
+#

@@ -4,6 +4,26 @@
 # FUNCTIONS #
 # # # # # # #
 
+
+#
+# Allows us to test different types of partitioning algorithms. If A is asym, consider:
+# 1) t(A) %*% A
+# 2) t(A) + A
+# Both of which are symmetric, and support the following 
+#
+.sym.spectral.clustering <- function(G, K){
+  D.minus.sqrt <- diag(1/sqrt(rowSums(G)))
+  L <- diag(nrow(G)) - D.minus.sqrt %*% G %*% D.minus.sqrt
+  X <- eigen(L)$vectors[,tail(seq(nrow(L)), K)]
+  T <- t(apply(X, 1, function(x) x/sqrt(sum(x^2))))
+  return(kmeans(T,K,iter.max=50,nstart=20)$cluster)
+}
+
+# Applies spectral clustering to the symmetrized matrix t(G) %*% G
+sym.spectral.clustering <- function(G,K){
+  return(.sym.spectral.clustering(t(G) %*% G, K))
+}
+
 # The functions below are implementations of methods from Meila & Pentney
 # asym.spectral.clustering - corresponds to the *BestWCut* algorithm
 # wcut - corresponds to the quantity *WCut* defined in the paper
@@ -11,13 +31,55 @@
 
 asym.spectral.clustering <- function(G, K){
   # following Meila & Pentney: Clustering by weighted cuts in directed graphs
+  #
+  # Note: the "eigen" function un R automatically returns orthonormal eigenvectors
+  # when the input matrix is symmetric, so we don't have any additional step
   
   HB <- 0.5 * (2 * diag(nrow(G)) - G - t(G))
   X <- eigen(HB)$vectors[,tail(seq(nrow(HB)), K)]
   T <- t(apply(X, 1, function(x) x/sqrt(sum(x^2))))
-  return(kmeans(T,K)$cluster)
+  return(kmeans(T,K,iter.max=30,nstart=10)$cluster)
 }
 
+
+# The purpose of this function is to reassign the cluster-blocks that contain
+# no information to the closest real clusters. During the clustering phase, there
+# are some intervals in the discretization on which we have no information (they are
+# not visited by any of the parallel chains), so the spectral clustering assigns them
+# pretty much randomly, or not very meaningfully. This postprocessing function identifies
+# those intervals, and reassigns them to the closest real cluster.
+# Args - clusters: a vector of number in {1..K} indication for each position, which cluster
+#                  they belong to
+#      - K.mat   : Some informtations obtained from the second output of get.K.emp.by.index.new
+#      - K       : the number of clusters 
+post.process.clusters <- function(clusters, K.mat, K){
+  tK.mat <- t(K.mat)
+  noinfo <- which(tK.mat[,1] == 0 & tK.mat[,2] == 0)
+  info <- which(tK.mat[,1] != 0 | tK.mat[,2] != 0)
+  
+  clusters.centers <- NULL
+  info.clusters <- clusters[info]
+
+  cdist <- function(x, c.center){
+    return(abs(x - c.center))
+  }
+  
+  for(i in seq(1,K)){
+    clusters.i <- which(clusters == i)
+    clusters.i.info <- clusters.i[clusters.i %in% info]
+    clusters.centers = c(clusters.centers, mean(clusters.i.info))
+  }
+
+  for(j in noinfo){
+    clusters[j] <- which.min(cdist(j, clusters.centers))
+  }
+  return(clusters)
+}
+
+
+# computes the value of the weighted cut for a certain cluster. Useful
+# to check wether the *mincut* found by the algorithm is good or not. See
+# Meila & Pentney for details about T and Tp
 wcut <- function(A, T, Tp, clusters){
   # A is a (possibly) asymmetric adjacency matrix
   # T is a vector (of weight)
