@@ -18,7 +18,7 @@ init.exploration.test <- function(dtarget, mcmc.sampler, init.points){
     draws <- mcmc.sampler(dtarget, init.points[i,])
     res <- rbind(res, draws)
   }
-
+  save(draws, file="output_0.rdata")
   return(res)
 }
 
@@ -41,14 +41,29 @@ init.exploration.old <- function(dtarget, mcmc.sampler, init.points){
 
 
 
-init.exploration <- function(dtarget, mcmc.sampler, init.points){
+init.exploration <- function(dtarget, mcmc.sampler, init.points,ncores=2){
   if(is.vector(init.points)){
     init.points <- as.matrix(init.points)
   }
 
-  draws <- do.call('rbind', mclapply(seq(nrow(init.points)), function(i) mcmc.sampler(dtarget, init.points[i,])))
+  draws <- do.call('rbind', mclapply(seq(nrow(init.points)), function(i) mcmc.sampler(dtarget, init.points[i,]), mc.cores=ncores))
 
+  save(draws, file="output_p.rdata")
+  
   return(draws)
 }
 
 
+
+
+# # # # 
+# Different samplers
+# # # #
+
+get.mv.mh <- function(niter, rproposal, dproposal, burnin=0){
+  fn <- function(dtarget, x0){
+    force(x0)
+    return(run.mv.mh(x0, niter, rproposal, dproposal, dtarget, burnin)$X)
+  }
+  return(fn)
+}

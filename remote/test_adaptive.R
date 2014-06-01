@@ -1,5 +1,5 @@
-source("../models/vanderwerken-1.R")
-source("../parallel_adaptive-hd.R")
+source("../models/vanderWerken-1.R")
+source("parallel_adaptive-hd.R")
 source("../bridge-sampling.R")
 source("../graphics.R")
 source("../clustering.R")
