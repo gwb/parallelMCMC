@@ -236,6 +236,25 @@ spectral.clustering <- function(X, K, L, nsub=500){
   kmeans.res <- kmeans(n.eigenvecs, K, iter.max=40, nstart=3)
   centers <- kmeans.res$centers
 
+  # compute points from sample whose projection is closest to
+  # the projected mean
+  close.centers <- NULL
+  for(i in seq(K)){
+    idx.i <- which(kmeans.res$cluster == i)
+    cmeans <- 0
+    closest.idx <- 0
+    if(length(idx.i)>1){
+      cmeans <- colMeans(n.eigenvecs[idx.i,])
+      closest.idx <- which.min(sapply(idx.i,
+                                      function(j) sum((n.eigenvecs[j,]-cmeans)^2)))
+    } else{
+      #cmeans <- Y[idx.i,]
+      closest.idx <- idx.i
+    }
+    close.centers <- rbind(close.centers, Y[idx.i[closest.idx],])
+  }
+  
+  
   # computing the true centers (on the original space)
   true.centers <- NULL
   for(i in seq(K)){
@@ -265,6 +284,6 @@ spectral.clustering <- function(X, K, L, nsub=500){
   }
   
   
-  return(list(indicator=fn, centers=true.centers, proj.centers=centers, eigenvalues=eigenvals, Y=Y, n.eigenvecs=n.eigenvecs))
+  return(list(indicator=fn, centers=close.centers, true.centers=true.centers, proj.centers=centers, eigenvalues=eigenvals, Y=Y, n.eigenvecs=n.eigenvecs))
   
 }
