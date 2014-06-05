@@ -205,7 +205,7 @@ get.K.hat <- function(X, L, nsub=500){
 
 
 # note: it is the responsibility of the L function to make sure that it is stable!
-spectral.clustering <- function(X, K, L, nsub=500){
+spectral.clustering <- function(X, K, L, nsub=500, L.vec=NULL){
   K.res <- get.K.hat(X, L, nsub)
   K.hat <- K.res$K.hat
   Y <- K.res$Y
@@ -228,7 +228,7 @@ spectral.clustering <- function(X, K, L, nsub=500){
 
 
   if(is.complex(eigenvecs)){
-    eigenvecs <- matrix(as.real(eigenvecs), nrow=nrow(eigenvecs))
+    eigenvecs <- matrix(as.double(eigenvecs), nrow=nrow(eigenvecs))
     warning("complex eigenvectors were converted to real (imaginary part discarded)")
   }
   
@@ -247,11 +247,12 @@ spectral.clustering <- function(X, K, L, nsub=500){
       cmeans <- colMeans(n.eigenvecs[idx.i,])
       closest.idx <- which.min(sapply(idx.i,
                                       function(j) sum((n.eigenvecs[j,]-cmeans)^2)))
+      closest.idx <- idx.i[closest.idx]
     } else{
       #cmeans <- Y[idx.i,]
       closest.idx <- idx.i
     }
-    close.centers <- rbind(close.centers, Y[idx.i[closest.idx],])
+    close.centers <- rbind(close.centers, Y[closest.idx,])
   }
   
   
@@ -269,7 +270,11 @@ spectral.clustering <- function(X, K, L, nsub=500){
   }
   
   fn <- function(x){
-    x.dist <- sapply(seq(nrow(Y)), function(i) L(Y[i,], x))
+      if(is.null(L.vec)){
+          x.dist <- sapply(seq(nrow(Y)), function(i) L(Y[i,], x))
+      } else {
+          x.dist <- L.vec(Y,x)
+      }
     if(any(is.na(x.dist))){
       x.dist[is.na(x.dist)] <- 0
       warning("some NA entries where set to 0")

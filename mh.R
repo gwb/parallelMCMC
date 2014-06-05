@@ -38,7 +38,17 @@ run.mv.mh <- function(x0, niter, rproposal, dproposal, target, burnin=0){
     
     # proposal and acceptance
     L.t <- rproposal(X.tm1)
-    r <- (target(L.t) * dproposal(X.tm1, L.t)) / (target(X.tm1) * dproposal(L.t, X.tm1))
+
+    if(target(X.tm1) == 0){
+        warning("Density of target is null (most likely due to bad initialization, setting acceptance ratio to 1. This could have bad effect on asymptotic behavior")
+        r <- 1
+    } else {
+        r <- (target(L.t) * dproposal(X.tm1, L.t)) / (target(X.tm1) * dproposal(L.t, X.tm1))
+    }
+    
+    if(is.na(r)){
+        save(i,x0,X,L,X.tm1, L.t, file="debug.rdata")             
+    }
     
     X <- rbind(X, X.tm1)
     L <- rbind(L, L.t)

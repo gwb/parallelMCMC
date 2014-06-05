@@ -1,3 +1,4 @@
+
 require(mvtnorm)
 require(clusterGeneration)
 
@@ -53,4 +54,17 @@ L <- function(new.state, old.state){
   } else {
     return(res)
   }
+}
+
+
+L.vec <- function(new.states, old.state){
+    eval.proposals <- NULL
+    for(i in seq(nrow(new.states))){
+        eval.proposals <- c(eval.proposals, eval.normal.proposal(old.state, new.states[i,]))
+    }
+    r.num <- dtarget(new.states) * eval.proposals
+    r.denom <- dtarget(old.state) * eval.normal.proposal(new.states, old.state)
+    a <- pmin(1, r.num/r.denom)
+    res <- eval.normal.proposal(new.states, old.state) * a
+    return(ifelse(is.na(res), 0, res))
 }

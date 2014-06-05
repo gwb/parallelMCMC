@@ -3,50 +3,13 @@ source("../mh.R")
 source("../clustering.R")
 
 
-# args: init.poins  - matrix where each row is an initial point
-#       mcmcsampler - a sampler that takes an initial points, and returns
-#                     a matrix of draws where each row is a draw
-init.exploration.test <- function(dtarget, mcmc.sampler, init.points){
-  if(is.vector(init.points)){
-    init.points <- as.matrix(init.points)
-  }
-
-  #init.points <- init.points[c(1,2),]
-  
-  res <- NULL
-  for(i in seq(nrow(init.points))){
-    draws <- mcmc.sampler(dtarget, init.points[i,])
-    res <- rbind(res, draws)
-  }
-  save(draws, file="output_0.rdata")
-  return(res)
-}
-
-# args: init.poins  - matrix where each row is an initial point
-#       mcmcsampler - a sampler that takes an initial points, and returns
-#                     a matrix of draws where each row is a draw
-init.exploration.old <- function(dtarget, mcmc.sampler, init.points){
-  if(is.vector(init.points)){
-    init.points <- as.matrix(init.points)
-  }
-  
-  res <- NULL
-  for(i in seq(nrow(init.points))){
-    draws <- mcmc.sampler(dtarget, init.points[i,])
-    res <- rbind(res, draws)
-  }
-
-  return(res)
-}
-
-
-
 init.exploration <- function(dtarget, mcmc.sampler, init.points,ncores=2){
   if(is.vector(init.points)){
     init.points <- as.matrix(init.points)
   }
 
-  draws <- do.call('rbind', mclapply(seq(nrow(init.points)), function(i) mcmc.sampler(dtarget, init.points[i,]), mc.cores=ncores))
+  draws <- do.call('rbind', mclapply(seq(nrow(init.points)),
+                                     function(i) mcmc.sampler(dtarget, init.points[i,]), mc.cores=ncores))
 
   save(draws, file="output_p.rdata")
   
@@ -54,6 +17,58 @@ init.exploration <- function(dtarget, mcmc.sampler, init.points,ncores=2){
 }
 
 
+# TODO: put parallel back
+adaptive.sampling <- function(dtarget, mcmc.sampler, n.clust, init.draws, clust.method, algo.iter, ncores=2){
+
+  # start by obtaining initial clusters (from initialization data)
+  clust.res <- clust.method(init.draws, n.clust)
+  clust.indicator <- clust.res$indicator
+  clust.centers <- clust.res$centers # matrix where each row is a the center of a cluster
+
+  # transforms the target
+  constrained.targets <- get.constrained.targets(n.clust, clust.indicator, dtarget)
+
+
+  # stuff we want to return at the end
+  clust.indicator.list <- vector('list', algo.iter+1)
+  clust.indicator.list[[1]] <- clust.indicator
+  clust.centers.list <- vector('list', algo.iter+1)
+  clust.centers.list[[1]] <- clust.centers
+
+  
+  for(i in seq(algo.iter)){
+    print(paste("Iteration:", i))
+    all.draws <- NULL
+    
+    # parallel mcmc
+    #for(j in seq(n.clust)){
+    #  print(paste("... Chain:", j))
+    #  draws <- mcmc.sampler(constrained.targets[[j]], clust.centers[j,])
+    #  all.draws <- rbind(all.draws, draws)
+    #}
+
+    # parallel mcmc
+    all.draws <- do.call('rbind',
+                         mclapply(seq(n.clust),
+                                  function(j) mcmc.sampler(constrained.targets[[j]], clust.centers[j,]),
+                                  mc.cores=ncores))
+    
+    # clustering
+    clust.res <- clust.method(all.draws, n.clust) 
+    clust.indicator <- clust.res$indicator
+    clust.centers <- clust.res$centers
+
+    # transform the target
+    constrained.targets <- get.constrained.targets(n.clust, clust.indicator, dtarget)
+
+    # save cluster indicator
+    clust.indicator.list[[i+1]] <- clust.indicator
+    clust.centers.list[[i+1]] <- clust.centers
+  }
+
+  return(list(indicators = clust.indicator.list, centers = clust.centers.list))
+
+}
 
 
 # # # # 
