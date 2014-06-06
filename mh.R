@@ -40,10 +40,16 @@ run.mv.mh <- function(x0, niter, rproposal, dproposal, target, burnin=0){
     L.t <- rproposal(X.tm1)
 
     if(target(X.tm1) == 0){
-        warning("Density of target is null (most likely due to bad initialization, setting acceptance ratio to 1. This could have bad effect on asymptotic behavior")
+        warning("Density of target is null (most likely due to bad initialization), setting acceptance ratio to 1. This could have bad effect on asymptotic behavior")
         r <- 1
     } else {
+      targ.L.t <- try(target(L.t), silent=T)
+      if("try-error"%in% class(targ.L.t)){
+        warning("target(L.t) can't be evaluated, most likely because it is far from all cluster centers. Setting acceptance ratio to 0. This could have bad effect on asymptotic behavior")
+        r <- 0
+      } else {
         r <- (target(L.t) * dproposal(X.tm1, L.t)) / (target(X.tm1) * dproposal(L.t, X.tm1))
+      }
     }
     
     if(is.na(r)){
