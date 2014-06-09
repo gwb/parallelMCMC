@@ -35,6 +35,17 @@ rtarget <- function(n){
   return(res)
 }
 
+rtarget.clust <- function(n){
+  res <- NULL
+  clust <- NULL
+  for(j in seq(n)){
+    i <- sample(seq(C), 1, prob=w.ls)
+    res <- rbind(res, rmvnorm(1, u.ls[[i]], sig.ls[[i]]))
+    clust <- c(clust, i)
+  }
+  return(list(res, clust))
+}
+
 draw.normal.proposal <- function(x){
   return(as.vector(rmvnorm(1, x, sig.prop)))
 }

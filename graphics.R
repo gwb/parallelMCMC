@@ -62,6 +62,78 @@ plot.cluster.and.target <- function(cluster.fn, rtarget, x1range=c(-10,10), x2ra
   return(g)
 }
 
+
+# projects the data on many different 2D subspaces
+# in the hope to show different features
+plot.vhd.clusters <- function(dt, cluster.fn = NULL, clust=NULL){
+  if(is.null(clust)){
+    clusters <- apply(dt, 1, cluster.fn)
+  } else {
+    clusters <- clust
+  }
+  nproj <- 5
+  
+  dt.dim <- ncol(dt)
+  
+  projmat.ls <- vector('list',nproj)
+  for( i in seq(length(projmat.ls))){
+    projmat.ls[[i]] <- t(qr.Q(qr(matrix(rnorm(2 * dt.dim), nrow=dt.dim, ncol=2))))
+  }
+
+  projdt.ls <- vector('list',nproj)
+  for( i in seq(length(projdt.ls))){
+    projdt.ls[[i]] <- t(projmat.ls[[i]] %*% t(dt))
+  }
+
+  N <- nrow(dt)
+  projdt <- do.call('rbind', projdt.ls)
+  projdt <- cbind(projdt, rep(clusters, nproj))
+  projdt <- cbind(projdt, rep(seq(nproj),each=dt.dim))
+  projdt <- data.frame("x"=projdt[,1],
+                       "y"=projdt[,2],
+                       "clust"=projdt[,3],
+                       "proj"=projdt[,4])
+
+  #ggplot(data=projdt, aes(x,y)) + geom_point(aes(color=factor(clust))) + facet_wrap(.~proj)
+  
+  return(list(projdt,projmat.ls))
+  
+}
+
+plot.vhd.clusters.combine <- function(dt, cluster.fn , ref.clust){
+  
+  simul.clusters <- apply(dt, 1, cluster.fn)
+  ref.clusters <- clust
+
+  nproj <- 5
+  
+  dt.dim <- ncol(dt)
+  
+  projmat.ls <- vector('list',nproj)
+  for( i in seq(length(projmat.ls))){
+    projmat.ls[[i]] <- t(qr.Q(qr(matrix(rnorm(2 * dt.dim), nrow=dt.dim, ncol=2))))
+  }
+
+  projdt.ls <- vector('list',nproj)
+  for( i in seq(length(projdt.ls))){
+    projdt.ls[[i]] <- t(projmat.ls[[i]] %*% t(dt))
+  }
+
+  N <- nrow(dt)
+  projdt <- do.call('rbind', projdt.ls)
+  projdt <- cbind(projdt, rep(clusters, nproj))
+  projdt <- cbind(projdt, rep(seq(nproj),each=dt.dim))
+  projdt <- data.frame("x"=projdt[,1],
+                       "y"=projdt[,2],
+                       "clust"=projdt[,3],
+                       "proj"=projdt[,4])
+
+  #ggplot(data=projdt, aes(x,y)) + geom_point(aes(color=factor(clust))) + facet_wrap(.~proj)
+  
+  return(list(projdt,projmat.ls))
+  
+}
+
 # # # # # # #
 # EXAMPLES  #
 # # # # # # #
