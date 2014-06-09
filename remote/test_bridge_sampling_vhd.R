@@ -1,6 +1,5 @@
 set.seed(123,"L'Ecuyer")
-#load("results/vanderwerken-1-5D-p.rdata")
-load("../results/vanderwerken-1-5D-p-simple.rdata")
+load("results/vanderwerken-1-5D-p-simple.rdata")
 source("../models/vanderWerken-vhd.R")
 source("../bridge-sampling.R", chdir=T)
 source("parallel_adaptive-hd.R")
@@ -9,12 +8,12 @@ source("../mh.R", chdir=T)
 require(parallel)
 
 get.r.centered.proposal <- function(u){
-  fn <- function(n){rmvnorm(n, u, diag(5))}
+  fn <- function(n){rmvnorm(n, u, 2*diag(5))}
   return(fn)
 }
 
 get.d.centered.proposal <- function(u){
-  fn <- function(x){dmvnorm(x, u, diag(5))}
+  fn <- function(x){dmvnorm(x, u, 2*diag(5))}
   return(fn)
 }
 
@@ -24,17 +23,16 @@ indx <- length(algo.res[[1]])
 
 
 constrained.targets <- get.constrained.targets(K, algo.res$indicators[[indx]], dtarget)
-mh.sampler.i <- get.mv.mh(100, draw.normal.proposal, eval.normal.proposal, burnin=50)
+mh.sampler.i <- get.mv.mh(4000, draw.normal.proposal, eval.normal.proposal, burnin=200)
 
 res.bs <- NULL
 Xs <- vector("list", K)
 
 compute.weight.i <- function(i){
   xi <- mh.sampler.i(constrained.targets[[i]], algo.res$centers[[indx]][i,])
-  #Xs[[i]] <- xi
   rq2 <- get.r.centered.proposal(algo.res$centers[[indx]][i,])
   dq2 <- get.d.centered.proposal(algo.res$centers[[indx]][i,])
-  x2 <- rq2(100)
+  x2 <- rq2(4000)
   res.i <- bridge.sampling.very.fast(constrained.targets[[i]], dq2, xi, x2)
   return(list(xi,res.i))
 }
@@ -54,4 +52,4 @@ emp.mean <- colSums(emp.mean.mat*norm.bs)
 
 true.mean <- colMeans(rtarget(500))
 
-save(norm.bs, emp.mean, true.mean, "results/bridge_sampling_vhd.rdata")
+save(norm.bs, emp.mean, true.mean, file="results/bridge_sampling_vhd.rdata")
