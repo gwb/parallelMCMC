@@ -195,6 +195,12 @@ thin.high.density.old <- function(draws, ds, thin.p=0.3){
 # Spectral clustering stuff
 # # # #
 
+get.K.hat.all <- function(Y, L){
+  get.row <- function(i) sapply(seq(nrow(Y)), function(j) L(Y[j,], Y[i,]))
+  all.rows <- lapply(seq(nrow(Y)), get.row)
+  return(list(K.hat=do.call('rbind', all.rows), Y=Y))
+}
+
 get.K.hat <- function(X, L, nsub=500){
   Y.idx <- sample(seq(1, nrow(X)), nsub)
   Y <- X[Y.idx,]
@@ -204,8 +210,73 @@ get.K.hat <- function(X, L, nsub=500){
 }
 
 
+.get.closeness.centers <- function(Y, K.hat, clusters, K){
+  centers <- NULL
+  for(i in seq(K)){
+    clust.idx <- which(clusters==i)
+    sub.K.hat <- K.hat[clust.idx, clust.idx]
+    #sub.K.hat <- t(apply(sub.K.hat, 1, function(x) ifelse(x == 0, 1/min(x), 1/x)))
+    #center.idx <- which.min(colSums(sub.K.hat))
+    center.idx <- which.max(colSums(sub.K.hat))
+    centers <- rbind(centers, Y[clust.idx[center.idx],])
+  }
+  return(centers)
+}
+
+.get.closeness.centers.2 <- function(Y, K.hat, clusters, K, n.dist.0=5){
+  centers <- NULL
+  for(i in seq(K)){
+    clust.idx <- which(clusters==i)
+    n.dist <- min(length(clust.idx), n.dist.0)
+    sub.K.hat <- K.hat[clust.idx, clust.idx]
+    sub.K.hat <- t(apply(sub.K.hat, 1, function(x) ifelse(x == 0, min(x), x)))
+    center.idx <- which.max(apply(sub.K.hat, 2, function(x) sum(sort(x)[1:n.dist])))
+    centers <- rbind(centers, Y[clust.idx[center.idx],])
+  }
+  return(centers)
+}
+
+
+.get.clusters <- function(K.hat, K){
+  D.sq.inv.vec <- 1/sqrt(rowSums(K.hat))
+  if(any(is.na(D.sq.inv.vec))){
+    D.sq.inv.vec[is.na(D.sq.inv.vec)] <- 0
+    warning("Some entries where set to 0 in D^(-1/2)")
+  }
+  D.sq.inv <- diag(D.sq.inv.vec)
+  K.L <- D.sq.inv %*% K.hat %*% D.sq.inv
+  
+  if(any(is.na(K.L)) || any(is.infinite(K.L))){
+    browser()
+  }
+  
+  eigen.res <- eigen(K.L)
+  eigenvecs <- eigen.res$vectors[,seq(1,K)]
+  eigenvals <- eigen.res$values[seq(1,K)]
+  
+  
+  if(is.complex(eigenvecs)){
+    eigenvecs <- matrix(as.double(eigenvecs), nrow=nrow(eigenvecs))
+    warning("complex eigenvectors were converted to real (imaginary part discarded)")
+  }
+  
+  n.eigenvecs <- t(apply(eigenvecs, 1, function(x) x/sqrt(sum(x^2))))
+  kmeans.res <- kmeans(n.eigenvecs, K, iter.max=40, nstart=3)
+  return(list(kmeans.res$cluster, eigenvecs, eigenvals))
+}
+
+#.get.cluster.fn <- function(centers){
+#  fn <- function(x){
+#    return(which.min(apply(centers, 1, function(center) (x-center)^2)))
+#  }
+#  return(fn)
+#}
+
+
+  
+
 # note: it is the responsibility of the L function to make sure that it is stable!
-spectral.clustering <- function(X, K, L, nsub=500, L.vec=NULL){
+spectral.clustering <- function(X, K, L, nsub=500, L.vec=NULL, center.method=.get.closeness.centers){
   K.res <- get.K.hat(X, L, nsub)
   K.hat <- K.res$K.hat
   Y <- K.res$Y
@@ -238,23 +309,24 @@ spectral.clustering <- function(X, K, L, nsub=500, L.vec=NULL){
 
   # compute points from sample whose projection is closest to
   # the projected mean
-  close.centers <- NULL
-  for(i in seq(K)){
-    idx.i <- which(kmeans.res$cluster == i)
-    cmeans <- 0
-    closest.idx <- 0
-    if(length(idx.i)>1){
-      cmeans <- colMeans(n.eigenvecs[idx.i,])
-      closest.idx <- which.min(sapply(idx.i,
-                                      function(j) sum((n.eigenvecs[j,]-cmeans)^2)))
-      closest.idx <- idx.i[closest.idx]
-    } else{
-      #cmeans <- Y[idx.i,]
-      closest.idx <- idx.i
-    }
-    close.centers <- rbind(close.centers, Y[closest.idx,])
-  }
-  
+  #close.centers <- NULL
+  #for(i in seq(K)){
+  #  idx.i <- which(kmeans.res$cluster == i)
+  #  cmeans <- 0
+  #  closest.idx <- 0
+  #  if(length(idx.i)>1){
+  #    cmeans <- colMeans(n.eigenvecs[idx.i,])
+  #    closest.idx <- which.min(sapply(idx.i,
+  #                                    function(j) sum((n.eigenvecs[j,]-cmeans)^2)))
+  #    closest.idx <- idx.i[closest.idx]
+  #  } else{
+  #    #cmeans <- Y[idx.i,]
+  #    closest.idx <- idx.i
+  #  }
+  #  close.centers <- rbind(close.centers, Y[closest.idx,])
+  #}
+
+  close.centers <- center.method(Y, K.hat, kmeans.res$cluster, K)
   
   # computing the true centers (on the original space)
   true.centers <- NULL

@@ -63,9 +63,89 @@ plot.cluster.and.target <- function(cluster.fn, rtarget, x1range=c(-10,10), x2ra
 }
 
 
+.plot.vhd.clusters <- function(dt, cluster.fn, projmat.ls, centers, nproj=5){
+
+  clusters <- apply(dt, 1, cluster.fn)
+  
+  projdt.ls <- vector('list',nproj)
+  for( i in seq(nproj)){
+    projdt.ls[[i]] <- t(projmat.ls[[i]] %*% t(dt))
+  }
+
+  if(!is.null(centers)){
+    proj.centers.ls <- NULL
+    for(i in seq(nproj)){
+      proj.centers.ls[[i]] <- t(projmat.ls[[i]] %*% t(centers))
+    }
+  }
+  
+  N <- nrow(dt)
+  projdt <- do.call('rbind', projdt.ls)
+  projdt <- cbind(projdt, rep(clusters, nproj))
+  projdt <- cbind(projdt, rep(seq(nproj),each=nrow(dt)))
+  projdt <- data.frame("x"=projdt[,1],
+                       "y"=projdt[,2],
+                       "clust"=projdt[,3],
+                       "proj"=projdt[,4])
+
+  if(!is.null(centers)){
+    centers.clusters <- apply(centers, 1, cluster.fn)
+    projcenters <- do.call('rbind', proj.centers.ls)
+    projcenters <- cbind(projcenters, rep(centers.clusters,nproj))
+    projcenters <- cbind(projcenters, rep(seq(nproj), each=nrow(centers)))
+    projcenters <- data.frame("x"=projcenters[,1],
+                         "y"=projcenters[,2],
+                         "clust"=projcenters[,3],
+                         "proj"=projcenters[,4])
+  }
+  
+  #ggplot(data=projdt, aes(x,y)) + geom_point(aes(color=factor(clust))) + facet_wrap(.~proj)
+  if(is.null(centers)){
+    return(list(projdt,projmat.ls))
+  } else {
+    return(list(projdt, projmat.ls, projcenters))
+  }
+  
+}
+
+
+plot.multiple.vhd.clusters <- function(dt, cluster.fn.ls, centers.ls=NULL, nproj=5){
+  
+  dt.dim <- ncol(dt)
+  
+  projmat.ls <- vector('list',nproj)
+  for( i in seq(nproj)){
+    projmat.ls[[i]] <- t(qr.Q(qr(matrix(rnorm(2 * dt.dim), nrow=dt.dim, ncol=2))))
+  }
+
+  Nclustfn <- length(cluster.fn.ls)
+  projdt.ls <- vector('list', Nclustfn)
+  if(!is.null(centers.ls)){
+    centersdt.ls <- vector('list', Nclustfn)
+    for(i in seq(Nclustfn)){
+      res.dt <- .plot.vhd.clusters(dt, cluster.fn.ls[[i]], projmat.ls, centers.ls[[i]], nproj)
+      projdt.ls[[i]] <- res.dt[[1]]
+      centersdt.ls[[i]] <- res.dt[[3]]
+      projdt.ls[[i]]$ind <- i
+      centersdt.ls[[i]]$ind <- i
+    }
+  } else {
+    for(i in seq(Nclustfn)){
+      res.dt <- .plot.vhd.clusters(dt, cluster.fn.ls[[i]], projmat.ls, nproj= nproj)
+      projdt.ls[[i]] <- res.dt[[1]]
+      projdt.ls[[i]]$ind <- i
+    }
+  }
+
+  projdt <- do.call('rbind', projdt.ls)
+  centersdt <- do.call('rbind', centersdt.ls)
+
+  return(list(projdt, centersdt))
+}
+
 # projects the data on many different 2D subspaces
 # in the hope to show different features
-plot.vhd.clusters <- function(dt, cluster.fn = NULL, clust=NULL){
+plot.vhd.clusters <- function(dt, cluster.fn = NULL, clust=NULL, centers=NULL){
   if(is.null(clust)){
     clusters <- apply(dt, 1, cluster.fn)
   } else {
@@ -76,62 +156,122 @@ plot.vhd.clusters <- function(dt, cluster.fn = NULL, clust=NULL){
   dt.dim <- ncol(dt)
   
   projmat.ls <- vector('list',nproj)
-  for( i in seq(length(projmat.ls))){
+  for( i in seq(nproj)){
     projmat.ls[[i]] <- t(qr.Q(qr(matrix(rnorm(2 * dt.dim), nrow=dt.dim, ncol=2))))
   }
 
   projdt.ls <- vector('list',nproj)
-  for( i in seq(length(projdt.ls))){
+  for( i in seq(nproj)){
     projdt.ls[[i]] <- t(projmat.ls[[i]] %*% t(dt))
   }
 
+  if(!is.null(centers)){
+    proj.centers.ls <- NULL
+    for(i in seq(nproj)){
+      proj.centers.ls[[i]] <- t(projmat.ls[[i]] %*% t(centers))
+    }
+  }
+  
   N <- nrow(dt)
   projdt <- do.call('rbind', projdt.ls)
   projdt <- cbind(projdt, rep(clusters, nproj))
-  projdt <- cbind(projdt, rep(seq(nproj),each=dt.dim))
+  projdt <- cbind(projdt, rep(seq(nproj),each=nrow(dt)))
   projdt <- data.frame("x"=projdt[,1],
                        "y"=projdt[,2],
                        "clust"=projdt[,3],
                        "proj"=projdt[,4])
 
+  if(!is.null(centers)){
+    centers.clusters <- apply(centers, 1, cluster.fn)
+    projcenters <- do.call('rbind', proj.centers.ls)
+    projcenters <- cbind(projcenters, rep(centers.clusters,nproj))
+    projcenters <- cbind(projcenters, rep(seq(nproj), each=nrow(centers)))
+    projcenters <- data.frame("x"=projcenters[,1],
+                         "y"=projcenters[,2],
+                         "clust"=projcenters[,3],
+                         "proj"=projcenters[,4])
+  }
+  
   #ggplot(data=projdt, aes(x,y)) + geom_point(aes(color=factor(clust))) + facet_wrap(.~proj)
-  
-  return(list(projdt,projmat.ls))
-  
+  if(is.null(centers)){
+    return(list(projdt,projmat.ls))
+  } else {
+    return(list(projdt, projmat.ls, projcenters))
+  }
 }
 
-plot.vhd.clusters.combine <- function(dt, cluster.fn , ref.clust){
-  
-  simul.clusters <- apply(dt, 1, cluster.fn)
-  ref.clusters <- clust
 
+plot.vhd.no.clusters <- function(dt, centers=NULL){
   nproj <- 5
   
   dt.dim <- ncol(dt)
   
   projmat.ls <- vector('list',nproj)
-  for( i in seq(length(projmat.ls))){
+  for( i in seq(nproj)){
     projmat.ls[[i]] <- t(qr.Q(qr(matrix(rnorm(2 * dt.dim), nrow=dt.dim, ncol=2))))
   }
 
   projdt.ls <- vector('list',nproj)
-  for( i in seq(length(projdt.ls))){
+  for( i in seq(nproj)){
+    projdt.ls[[i]] <- t(projmat.ls[[i]] %*% t(dt))
+  }
+
+  if(!is.null(centers)){
+    proj.centers.ls <- vector('list',nproj)
+    for(i in seq(nproj)){
+      proj.centers.ls[[i]] <- t(projmat.ls[[i]] %*% t(centers))
+    }
+  }
+  
+  N <- nrow(dt)
+  projdt <- do.call('rbind', projdt.ls)
+  projdt <- cbind(projdt, rep(seq(nproj),each=nrow(dt)))
+  projdt <- data.frame("x"=projdt[,1],
+                       "y"=projdt[,2],
+                       "proj"=projdt[,3])
+
+  if(!is.null(centers)){
+    projcenters <- do.call('rbind', proj.centers.ls)
+    projcenters <- cbind(projcenters, rep(seq(nproj), each=nrow(centers)))
+    projcenters <- data.frame("x"=projcenters[,1],
+                         "y"=projcenters[,2],
+                         "proj"=projcenters[,3])
+  }
+  
+  #ggplot(data=projdt, aes(x,y)) + geom_point(aes(color=factor(clust))) + facet_wrap(.~proj)
+  if(is.null(centers)){
+    return(list(projdt,projmat.ls))
+  } else {
+    return(list(projdt, projmat.ls, projcenters))
+  }
+}
+
+
+
+plot.vhd.simple <- function(dt, clust, nproj=5){
+  dt.dim <- ncol(dt)
+
+  projmat.ls <- vector('list',nproj)
+  for( i in seq(nproj)){
+    projmat.ls[[i]] <- t(qr.Q(qr(matrix(rnorm(2 * dt.dim), nrow=dt.dim, ncol=2))))
+  }
+
+  
+  projdt.ls <- vector('list',nproj)
+  for( i in seq(nproj)){
     projdt.ls[[i]] <- t(projmat.ls[[i]] %*% t(dt))
   }
 
   N <- nrow(dt)
   projdt <- do.call('rbind', projdt.ls)
-  projdt <- cbind(projdt, rep(clusters, nproj))
-  projdt <- cbind(projdt, rep(seq(nproj),each=dt.dim))
+  projdt <- cbind(projdt, rep(clust, nproj))
+  projdt <- cbind(projdt, rep(seq(nproj),each=nrow(dt)))
   projdt <- data.frame("x"=projdt[,1],
                        "y"=projdt[,2],
                        "clust"=projdt[,3],
                        "proj"=projdt[,4])
 
-  #ggplot(data=projdt, aes(x,y)) + geom_point(aes(color=factor(clust))) + facet_wrap(.~proj)
-  
-  return(list(projdt,projmat.ls))
-  
+  return(list(projdt, projdt.ls, projmat.ls))
 }
 
 # # # # # # #
