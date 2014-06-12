@@ -34,7 +34,8 @@ adaptive.sampling <- function(dtarget, mcmc.sampler, n.clust, init.draws, clust.
   clust.indicator.list[[1]] <- clust.indicator
   clust.centers.list <- vector('list', algo.iter+1)
   clust.centers.list[[1]] <- clust.centers
-
+  #res.draws <- vector('list', algo.iter+1)
+  #res.draws[[1]] <- init.draws
   
   for(i in seq(algo.iter)){
     print(paste("Iteration:", i))
@@ -64,6 +65,9 @@ adaptive.sampling <- function(dtarget, mcmc.sampler, n.clust, init.draws, clust.
     # save cluster indicator
     clust.indicator.list[[i+1]] <- clust.indicator
     clust.centers.list[[i+1]] <- clust.centers
+
+    # save draws
+    #res.draws[[i+1]] <- all.draws
   }
 
   return(list(indicators = clust.indicator.list, centers = clust.centers.list))

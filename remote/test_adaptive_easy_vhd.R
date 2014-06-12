@@ -38,6 +38,6 @@ spec.clust <- function(X, C){
 algo.res <- adaptive.sampling(dtarget, mh.sampler, K, init.draws, spec.clust, 5, ncores=K)
 
 
-save(u.ls, sig.ls, init.draws, init.points, algo.res, file="results/vanderwerken-1-5D-p-simple.rdata")
+save(u.ls, sig.ls, init.draws, init.points, algo.res, file="results/vanderwerken-1-5D-p-easy.rdata")
 
 

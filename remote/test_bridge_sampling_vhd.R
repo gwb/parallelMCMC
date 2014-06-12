@@ -1,6 +1,8 @@
 set.seed(123,"L'Ecuyer")
-load("results/vanderwerken-1-5D-p-simple.rdata")
-source("../models/vanderWerken-vhd.R")
+#load("results/vanderwerken-1-5D-p-simple.rdata")
+load("results/vanderwerken-1-5D-p-easy.rdata")
+#source("../models/vanderWerken-vhd.R")
+source("../models/vanderWerken-easy-vhd.R")
 source("../bridge-sampling.R", chdir=T)
 source("parallel_adaptive-hd.R")
 source("../mh.R", chdir=T)
@@ -52,4 +54,5 @@ emp.mean <- colSums(emp.mean.mat*norm.bs)
 
 true.mean <- colMeans(rtarget(500))
 
-save(norm.bs, emp.mean, true.mean, file="results/bridge_sampling_vhd.rdata")
+#save(norm.bs, emp.mean, true.mean, file="results/bridge_sampling_vhd.rdata")
+save(norm.bs, emp.mean, true.mean, file="results/bridge_sampling_easy_vhd.rdata")
