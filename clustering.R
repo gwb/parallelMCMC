@@ -201,6 +201,14 @@ get.K.hat.all <- function(Y, L){
   return(list(K.hat=do.call('rbind', all.rows), Y=Y))
 }
 
+# this one is ~ 120 times faster than get.K.hat
+get.K.hat.fast <- function(X, Lvec, nsub=500){
+  Y.idx <- sample(seq(1, nrow(X)), nsub)
+  Y <- X[Y.idx,]
+  all.rows <- lapply(seq(nsub), function(i) Lvec(Y, Y[i,]))
+  return(list(K.hat=do.call('rbind', all.rows), Y=Y))
+}
+
 get.K.hat <- function(X, L, nsub=500){
   Y.idx <- sample(seq(1, nrow(X)), nsub)
   Y <- X[Y.idx,]
