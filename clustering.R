@@ -245,7 +245,7 @@ get.K.hat <- function(X, L, nsub=500){
 }
 
 
-.get.clusters <- function(K.hat, K){
+.do.spec.clustering <- function(K.hat, K){
   D.sq.inv.vec <- 1/sqrt(rowSums(K.hat))
   if(any(is.na(D.sq.inv.vec))){
     D.sq.inv.vec[is.na(D.sq.inv.vec)] <- 0
@@ -269,19 +269,54 @@ get.K.hat <- function(X, L, nsub=500){
   }
   
   n.eigenvecs <- t(apply(eigenvecs, 1, function(x) x/sqrt(sum(x^2))))
-  kmeans.res <- kmeans(n.eigenvecs, K, iter.max=40, nstart=3)
-  return(list(kmeans.res$cluster, eigenvecs, eigenvals))
+  kmeans.res <- kmeans(n.eigenvecs, K, iter.max=200, nstart=5)
+  return(list(cluster=kmeans.res$cluster, centers=kmeans.res$centers, n.eigenvecs=n.eigenvecs, eigenvals=eigenvals))
 }
 
-#.get.cluster.fn <- function(centers){
-#  fn <- function(x){
-#    return(which.min(apply(centers, 1, function(center) (x-center)^2)))
-#  }
-#  return(fn)
-#}
-
-
+.get.cluster.fn <- function(centers, L, Y, eigenvecs){
   
+  fn <- function(x){
+    x.dist <- L(Y,x)    
+    if(any(is.na(x.dist))){
+      x.dist[is.na(x.dist)] <- 0
+      warning("some NA entries where set to 0")
+    }
+    norm.x.dist <- x.dist / sum(x.dist)
+    px <- as.vector(norm.x.dist %*% eigenvecs)
+    npx <- px / sqrt(sum(px^2))
+    dist.centers <- sapply(seq(nrow(centers)), function(i) sum( (npx-centers[i,])^2 ))
+    
+    return(which.min(dist.centers))
+  }
+  return(fn)
+}
+
+
+# note it is the responsibility of the user to check that L, get.K.hat, and cluster.method  work well together
+# both should be vectorized or not.
+
+spectral.clustering.new <- function(X, K, L, get.K.hat,
+                                    center.method=.get.closeness.centers.2,
+                                    cluster.method=.get.cluster.fn, nsub=100){
+
+  # getting K.hat and Y
+  K.res <- get.K.hat(X, L, nsub)
+  K.hat <- K.res$K.hat
+  Y <- K.res$Y
+
+  # the actual spectral clustering
+  clust.res <- .do.spec.clustering(K.hat, K)
+  
+  # creating the cluster indicator function
+  fn <- cluster.method(clust.res$centers, L, Y, clust.res$n.eigenvecs)
+
+  # compute the centers used to initialize next mcmc iteration
+  centers <- center.method(Y, K.hat, clust.res$cluster, K)
+  
+  return(list(K.hat=K.hat, indicator=fn, centers=centers, eigenvalues=clust.res$eigenvals, n.eigenvecs=clust.res$n.eigenvecs, Y=Y))
+}
+
+
 
 # note: it is the responsibility of the L function to make sure that it is stable!
 spectral.clustering <- function(X, K, L, nsub=500, L.vec=NULL, center.method=.get.closeness.centers){
@@ -369,6 +404,6 @@ spectral.clustering <- function(X, K, L, nsub=500, L.vec=NULL, center.method=.ge
   }
   
   
-  return(list(indicator=fn, centers=close.centers, true.centers=true.centers, proj.centers=centers, eigenvalues=eigenvals, Y=Y, n.eigenvecs=n.eigenvecs))
+  return(list(K.hat=K.hat,indicator=fn, centers=close.centers, true.centers=true.centers, proj.centers=centers, eigenvalues=eigenvals, Y=Y, n.eigenvecs=n.eigenvecs))
   
 }
