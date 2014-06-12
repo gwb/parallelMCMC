@@ -80,31 +80,3 @@ L.vec.sym <- function(new.states, old.state){
   res <- eval.proposals * a
   return(ifelse(is.na(res), 0, res))
 }
-
-
-L.vec <- function(new.states, old.state){
-  eval.proposals <- NULL
-  for(i in seq(nrow(new.states))){
-        eval.proposals <- c(eval.proposals, eval.normal.proposal(old.state, new.states[i,]))
-    }
-  ev.n.prop.ls <- eval.normal.proposal(new.states,old.state)
-  r.num <- dtarget(new.states) * eval.proposals
-  r.denom <- dtarget(old.state) * ev.n.prop.ls
-  a <- pmin(1, r.num/r.denom)
-  res <- ev.n.prop.ls * a
-  return(ifelse(is.na(res), 0, res))
-}
-
-
-# you can make it faster by not repeating the eval.normal.proposal and simplifying directly
-L.vec.old <- function(new.states, old.state){
-    eval.proposals <- NULL
-    for(i in seq(nrow(new.states))){
-        eval.proposals <- c(eval.proposals, eval.normal.proposal(old.state, new.states[i,]))
-    }
-    r.num <- dtarget(new.states) * eval.proposals
-    r.denom <- dtarget(old.state) * eval.normal.proposal(new.states, old.state)
-    a <- pmin(1, r.num/r.denom)
-    res <- eval.normal.proposal(new.states, old.state) * a
-    return(ifelse(is.na(res), 0, res))
-}

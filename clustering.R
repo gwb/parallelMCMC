@@ -182,34 +182,19 @@ thin.high.density.old <- function(draws, ds, thin.p=0.3){
 }
 
 
-#proj.principal.2D <- function(X){
-#  pca.comp <- princomp(X)
-#  x.1 <- pca.comp$loadings[,1]
-#  x.2 <- pca.comp$loadings[,2]
-#  pmat <- rbind(x.1, x.2)
-#  
-#  
-#}
-
 # # # #
 # Spectral clustering stuff
 # # # #
 
-get.K.hat.all <- function(Y, L){
-  get.row <- function(i) sapply(seq(nrow(Y)), function(j) L(Y[j,], Y[i,]))
-  all.rows <- lapply(seq(nrow(Y)), get.row)
-  return(list(K.hat=do.call('rbind', all.rows), Y=Y))
-}
-
-# this one is ~ 120 times faster than get.K.hat
-get.K.hat.fast <- function(X, Lvec, nsub=500){
+# this one is ~ 120 times faster than get.K.hat.slow
+get.K.hat <- function(X, Lvec, nsub=500){
   Y.idx <- sample(seq(1, nrow(X)), nsub)
   Y <- X[Y.idx,]
   all.rows <- lapply(seq(nsub), function(i) Lvec(Y, Y[i,]))
   return(list(K.hat=do.call('rbind', all.rows), Y=Y))
 }
 
-get.K.hat <- function(X, L, nsub=500){
+get.K.hat.slow <- function(X, L, nsub=500){
   Y.idx <- sample(seq(1, nrow(X)), nsub)
   Y <- X[Y.idx,]
   get.row <- function(i) sapply(seq(nsub), function(j) L(Y[j,], Y[i,]))
@@ -295,9 +280,9 @@ get.K.hat <- function(X, L, nsub=500){
 # note it is the responsibility of the user to check that L, get.K.hat, and cluster.method  work well together
 # both should be vectorized or not.
 
-spectral.clustering.new <- function(X, K, L, get.K.hat,
-                                    center.method=.get.closeness.centers.2,
-                                    cluster.method=.get.cluster.fn, nsub=100){
+spectral.clustering <- function(X, K, L, get.K.hat,
+                                center.method=.get.closeness.centers.2,
+                                cluster.method=.get.cluster.fn, nsub=100){
 
   # getting K.hat and Y
   K.res <- get.K.hat(X, L, nsub)
@@ -313,97 +298,6 @@ spectral.clustering.new <- function(X, K, L, get.K.hat,
   # compute the centers used to initialize next mcmc iteration
   centers <- center.method(Y, K.hat, clust.res$cluster, K)
   
-  return(list(K.hat=K.hat, indicator=fn, centers=centers, eigenvalues=clust.res$eigenvals, n.eigenvecs=clust.res$n.eigenvecs, Y=Y))
+  return(list(indicator=fn, centers=centers, eigenvalues=clust.res$eigenvals, n.eigenvecs=clust.res$n.eigenvecs, Y=Y))
 }
 
-
-
-# note: it is the responsibility of the L function to make sure that it is stable!
-spectral.clustering <- function(X, K, L, nsub=500, L.vec=NULL, center.method=.get.closeness.centers){
-  K.res <- get.K.hat(X, L, nsub)
-  K.hat <- K.res$K.hat
-  Y <- K.res$Y
-
-  D.sq.inv.vec <- 1/sqrt(rowSums(K.hat))
-  if(any(is.na(D.sq.inv.vec))){
-    D.sq.inv.vec[is.na(D.sq.inv.vec)] <- 0
-    warning("Some entries where set to 0 in D^(-1/2)")
-  }
-  D.sq.inv <- diag(D.sq.inv.vec)
-  K.L <- D.sq.inv %*% K.hat %*% D.sq.inv
-
-  if(any(is.na(K.L)) || any(is.infinite(K.L))){
-    browser()
-  }
-  
-  eigen.res <- eigen(K.L)
-  eigenvecs <- eigen.res$vectors[,seq(1,K)]
-  eigenvals <- eigen.res$values[seq(1,K)]
-
-
-  if(is.complex(eigenvecs)){
-    eigenvecs <- matrix(as.double(eigenvecs), nrow=nrow(eigenvecs))
-    warning("complex eigenvectors were converted to real (imaginary part discarded)")
-  }
-  
-  n.eigenvecs <- t(apply(eigenvecs, 1, function(x) x/sqrt(sum(x^2))))
-  kmeans.res <- kmeans(n.eigenvecs, K, iter.max=40, nstart=3)
-  centers <- kmeans.res$centers
-
-  # compute points from sample whose projection is closest to
-  # the projected mean
-  #close.centers <- NULL
-  #for(i in seq(K)){
-  #  idx.i <- which(kmeans.res$cluster == i)
-  #  cmeans <- 0
-  #  closest.idx <- 0
-  #  if(length(idx.i)>1){
-  #    cmeans <- colMeans(n.eigenvecs[idx.i,])
-  #    closest.idx <- which.min(sapply(idx.i,
-  #                                    function(j) sum((n.eigenvecs[j,]-cmeans)^2)))
-  #    closest.idx <- idx.i[closest.idx]
-  #  } else{
-  #    #cmeans <- Y[idx.i,]
-  #    closest.idx <- idx.i
-  #  }
-  #  close.centers <- rbind(close.centers, Y[closest.idx,])
-  #}
-
-  close.centers <- center.method(Y, K.hat, kmeans.res$cluster, K)
-  
-  # computing the true centers (on the original space)
-  true.centers <- NULL
-  for(i in seq(K)){
-    idx.i <- which(kmeans.res$cluster == i)
-    cmeans <- 0
-    if(length(idx.i)>1){
-      cmeans <- colMeans(Y[idx.i,])
-    } else{
-      cmeans <- Y[idx.i,] # otherwise colMeans crashes
-    }
-    true.centers <- rbind(true.centers, cmeans)
-  }
-  
-  fn <- function(x){
-      if(is.null(L.vec)){
-          x.dist <- sapply(seq(nrow(Y)), function(i) L(Y[i,], x))
-      } else {
-          x.dist <- L.vec(Y,x)
-      }
-    if(any(is.na(x.dist))){
-      x.dist[is.na(x.dist)] <- 0
-      warning("some NA entries where set to 0")
-    }
-    norm.x.dist <- x.dist / sum(x.dist)
-    px <- as.vector(norm.x.dist %*% eigenvecs)
-    npx <- px / sqrt(sum(px^2))
-    dist.centers <- sapply(seq(nrow(centers)), function(i) sum( (npx-centers[i,])^2 ))
-    
-    return(which.min(dist.centers))
-    
-  }
-  
-  
-  return(list(K.hat=K.hat,indicator=fn, centers=close.centers, true.centers=true.centers, proj.centers=centers, eigenvalues=eigenvals, Y=Y, n.eigenvecs=n.eigenvecs))
-  
-}
