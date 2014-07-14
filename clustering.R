@@ -254,7 +254,7 @@ get.K.hat.slow <- function(X, L, nsub=500){
   }
   
   n.eigenvecs <- t(apply(eigenvecs, 1, function(x) x/sqrt(sum(x^2))))
-  kmeans.res <- kmeans(n.eigenvecs, K, iter.max=200, nstart=5)
+  kmeans.res <- kmeans(n.eigenvecs, K, iter.max=400, nstart=15)
   return(list(cluster=kmeans.res$cluster, centers=kmeans.res$centers, n.eigenvecs=n.eigenvecs, eigenvals=eigenvals))
 }
 
