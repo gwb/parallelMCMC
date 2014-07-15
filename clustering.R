@@ -229,6 +229,18 @@ get.K.hat.slow <- function(X, L, nsub=500){
   return(centers)
 }
 
+.get.closeness.centers.3.closure <- function(target.fn){
+    .get.closeness.centers.3 <- function(Y, K.hat, clusters, K){
+        centers <- NULL
+        for(i in seq(K)){
+            clust.idx <- which(clusters==i)
+            max.dens.idx <- which.max(apply(Y[clust.idx,], 1, target.fn))
+            centers <- rbind(centers, Y[clust.idx[max.dens.idx],])
+        }
+        return(centers)
+    }
+    return(.get.closeness.centers.3)
+}
 
 .do.spec.clustering <- function(K.hat, K){
   D.sq.inv.vec <- 1/sqrt(rowSums(K.hat))
