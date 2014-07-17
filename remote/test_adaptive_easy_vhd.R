@@ -2,13 +2,33 @@ source("parallel_adaptive-hd.R")
 source("../bridge-sampling.R")
 source("../graphics.R")
 source("../clustering.R")
+require("yaml")
 
 set.seed(123, "L'Ecuyer")
+
+# # # # # # # # # # # # # # # # # # # # # # # # #
+# Command line parameters & Yaml configuration  #
+# # # # # # # # # # # # # # # # # # # # # # # # #
+
+# Command line
 args <- commandArgs(trailingOnly=TRUE)
 ncores <- as.numeric(args[1])
+model.filepath <- args[2] 
+output.filepath <- args[3]
 
-source("../models/vanderWerken-easy-vhd.R")
 
+if(is.na(model.filepath)){
+    model.filepath <- "../models/vanderWerken-easy-vhd.R"
+}
+
+if(is.na(output.filepath)){
+    output.filepath <- "results/vanderwerken-1-5D-p-easy.rdata"
+}
+
+#source("../models/vanderWerken-easy-vhd.R")
+source(model.filepath)
+
+# Yaml
 
 
 # # # # # # # # # # # #
@@ -39,6 +59,8 @@ spec.clust <- function(X, C){
 algo.res <- adaptive.sampling(dtarget, mh.sampler, K, init.draws, spec.clust, 7, ncores=K)
 
 
-save(u.ls, sig.ls, init.draws, init.points, algo.res, file="results/vanderwerken-1-5D-p-easy.rdata")
 
+    
+#save(u.ls, sig.ls, init.draws, init.points, algo.res, file="results/vanderwerken-1-5D-p-easy.rdata")
+save(u.ls, sig.ls, init.draws, init.points, algo.res, file=output.filepath)
 
