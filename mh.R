@@ -80,7 +80,12 @@ run.mv.mh <- function(x0, niter, rproposal, dproposal, target, burnin=0){
 .get.constrained.target <- function(constraint.fn, original.target){
   force(constraint.fn)
   constrained.target <- function(x){
-    if(constraint.fn(x)){
+    cstr.fn.x <- constraint.fn(x)
+    if(length(cstr.fn.x) == 0){
+        warning("There was an error in the constraint function. Most likely, the point is far from everything which causes some sort of underflow. The density was set to 0. If you see this error too often, then the variance of your proposal (either in the actual sampler, or in the bridge sampling algorithm) is too large.")
+        return(0)
+    }
+    if(cstr.fn.x){
       return(original.target(x))
     } else {
       return(0)
