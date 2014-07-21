@@ -5,6 +5,7 @@ source("parallel_adaptive-hd.R")
 source("../mh.R", chdir=T)
 require(parallel)
 require(yaml)
+require(methods) # this is loaded automatically when using the R console, but not by rscript, and is necessary for the mvtnorm packages
 
 # # # # # # # # # # # # # # # # # # # # # # # # #
 # Command line parameters & Yaml configuration  #
@@ -32,15 +33,17 @@ sampler.ndraws <- params$bridge$sampler_ndraws
 ref.ndraws <- params$bridge$ref_ndraws
 
 
-get.r.centered.proposal <- function(u){
+get.r.centered.proposal <- function(u, sigmat){
   #fn <- function(n){rmvnorm(n, u, 2*diag(5))}
-  fn <- function(n){rmvt(n, delta=u, sigma=diag(length(u)), df=3, type="shifted")}
-  return(fn)
+  #fn <- function(n){rmvt(n, delta=u, sigma=diag(length(u)), df=4, type="shifted")}
+    fn <- function(n){rmvt(n, delta=u, sigma=sigmat, df=10, type="shifted")}
+    return(fn)
 }
 
-get.d.centered.proposal <- function(u){
+get.d.centered.proposal <- function(u,sigmat){
     #fn <- function(x){dmvnorm(x, u, 2*diag(5))}
-    fn <- function(x){dmvt(x, delta=u, df=3, log=F)}
+    #fn <- function(x){dmvt(x, delta=u, df=4, log=F)}
+    fn <- function(x){dmvt(x, delta=u, sigma=sigmat, df=10, log=F)}
     return(fn)
 }
 
@@ -57,14 +60,17 @@ Xs <- vector("list", K)
 
 compute.weight.i <- function(i){
   xi <- mh.sampler.i(constrained.targets[[i]], algo.res$centers[[indx]][i,])
-  rq2 <- get.r.centered.proposal(algo.res$centers[[indx]][i,])
-  dq2 <- get.d.centered.proposal(algo.res$centers[[indx]][i,])
+  u <- optim(algo.res$centers[[indx]][i,], constrained.targets[[i]], control=list(fnscale=-1))$par
+  sigmat <- cov(xi)
+  rq2 <- get.r.centered.proposal(u, sigmat)
+  dq2 <- get.d.centered.proposal(u, sigmat)
   x2 <- rq2(ref.ndraws)
   res.i <- bridge.sampling.very.fast(constrained.targets[[i]], dq2, xi, x2)
   return(list(xi,res.i))
 }
 
 res.cwi <- mclapply(seq(K), compute.weight.i, mc.cores=ncores)
+print(str(res.cwi))
 #res.cwi <- lapply(seq(K), compute.weight.i)
 
 res.bs <- do.call('c', lapply(res.cwi, function(items) items[[2]]))
