@@ -274,6 +274,38 @@ plot.vhd.simple <- function(dt, clust, nproj=5){
   return(list(projdt, projdt.ls, projmat.ls))
 }
 
+
+plot.dt.and.bridge <- function(dt1, dt2, nproj=5){
+    dt.dim <- ncol(dt1)
+
+    projmat.ls <- vector('list', nproj)
+    for( i in seq(nproj)){
+        projmat.ls[[i]] <- t(qr.Q(qr(matrix(rnorm(2 * dt.dim), nrow=dt.dim, ncol=2))))
+    }
+    
+    projdt.ls.1 <- vector('list',nproj)
+    projdt.ls.2 <- vector('list',nproj)
+    for( i in seq(nproj)){
+        projdt.ls.1[[i]] <- t(projmat.ls[[i]] %*% t(dt1))
+        projdt.ls.2[[i]] <- t(projmat.ls[[i]] %*% t(dt2))
+    }
+    projdt.1 <- do.call('rbind', projdt.ls.1)
+    projdt.1 <- cbind(projdt.1, rep(seq(nproj), each=nrow(dt1)))
+    projdt.1 <- cbind(projdt.1, rep(1, nrow(dt1)))
+    projdt.2 <- do.call('rbind', projdt.ls.2)
+    projdt.2 <- cbind(projdt.2, rep(seq(nproj), each=nrow(dt2)))
+    projdt.2 <- cbind(projdt.2, rep(2, nrow(dt2)))
+    
+    projdt <- rbind(projdt.1, projdt.2)
+    projdt <- data.frame("x"=projdt[,1],
+                         "y"=projdt[,2],
+                         "proj"=projdt[,3],
+                         "dt"=projdt[,4])
+    return(projdt)
+    
+}
+
+
 # # # # # # #
 # EXAMPLES  #
 # # # # # # #
