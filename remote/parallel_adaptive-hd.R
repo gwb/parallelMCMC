@@ -21,10 +21,12 @@ init.exploration <- function(dtarget, mcmc.sampler, init.points,ncores=2){
 adaptive.sampling <- function(dtarget, mcmc.sampler, n.clust, init.draws, clust.method, algo.iter, ncores=2){
 
   # start by obtaining initial clusters (from initialization data)
+  print("BEGIN: INITIAL CLUSTERING")
   clust.res <- clust.method(init.draws, n.clust)
   clust.indicator <- clust.res$indicator
   clust.centers <- clust.res$centers # matrix where each row is a the center of a cluster
-
+  print("END: INITIAL CLUSTERING")
+  
   # transforms the target
   constrained.targets <- get.constrained.targets(n.clust, clust.indicator, dtarget)
 

@@ -41,8 +41,9 @@ niter <- params$adaptive$niter
 # # # # # # # # # # # #
 
 # We initialize at the actual centers. See how we do in this simple case
-init.points <- do.call('rbind', lapply(1:4, function(i) do.call('rbind', u.ls)))
-
+#init.points <- do.call('rbind', lapply(1:4, function(i) do.call('rbind', u.ls)))
+init.points <- do.call('rbind', u.ls)
+save(init.points, file="debug-exploration.rdata")
 
 # Number of desired partitions
 K <- 4
@@ -52,7 +53,9 @@ mh.sampler <- get.mv.mh(sampler.ndraws, draw.normal.proposal, eval.normal.propos
 mh.explorer <- get.mv.mh(explorer.ndraws, draw.normal.proposal, eval.normal.proposal, burnin=as.integer(explorer.ndraws*0.1))
 
 # explore the surface
+print("BEGIN: exploration")
 init.draws <- init.exploration(dtarget, mh.explorer, init.points, ncores=ncores)
+print("END: exploration")
 
 # setting up clustering method
 spec.clust <- function(X, C){

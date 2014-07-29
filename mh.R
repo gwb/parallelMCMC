@@ -73,7 +73,7 @@ run.mv.mh <- function(x0, niter, rproposal, dproposal, target, burnin=0){
   L <- L[seq(burnin+1, niter),]
   R <- R[seq(burnin+1, niter)]
 
-  print(paste("acceptance rate: ", acceptance.count/niter))
+  print(paste("acceptance rate: ", acceptance.count / niter))
   
   return(list(X=X, L=L, R=R, acceptance.rate = acceptance.count / niter))
 }

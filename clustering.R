@@ -279,6 +279,7 @@ get.K.hat.slow <- function(X, L, nsub=500){
   }
   
   n.eigenvecs <- t(apply(eigenvecs, 1, function(x) x/sqrt(sum(x^2))))
+  #save(n.eigenvecs, K.hat, K, K.L, file="debugfile.rdata")
   kmeans.res <- kmeans(n.eigenvecs, K, iter.max=400, nstart=15)
   return(list(cluster=kmeans.res$cluster, centers=kmeans.res$centers, n.eigenvecs=n.eigenvecs, eigenvals=eigenvals))
 }
@@ -313,7 +314,8 @@ spectral.clustering <- function(X, K, L, get.K.hat,
   K.res <- get.K.hat(X, L, nsub)
   K.hat <- K.res$K.hat
   Y <- K.res$Y
-
+  #save(Y, file="debugfile-1.rdata")
+  
   # the actual spectral clustering
   clust.res <- .do.spec.clustering(K.hat, K)
   
