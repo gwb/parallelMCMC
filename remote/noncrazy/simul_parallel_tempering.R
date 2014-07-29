@@ -84,12 +84,12 @@ init.states.mat <- matrix(rep(0,8), nrow=4)
 
 
 run.simul <- function(j){
-    res <- parallel.tempering(targets.ls, single.rproposals.ls, single.dproposals.ls, init.states.mat, 6000)
+    res <- parallel.tempering(targets.ls, single.rproposals.ls, single.dproposals.ls, init.states.mat, 10000)
     states <- res[[1]][[1]]
     return(colMeans(states))
 }
 
 
-res <- do.call('rbind', mclapply(seq(32), run.simul, mc.cores=16))
+res <- do.call('rbind', mclapply(seq(32), run.simul, mc.cores=32))
 
 save(res, file="results/parallel_tempering.rdata")
