@@ -194,6 +194,19 @@ get.K.hat <- function(X, Lvec, nsub=500){
   return(list(K.hat=do.call('rbind', all.rows), Y=Y))
 }
 
+get.K.hat.pruned <- function(X, Lvec, nsub=500, pprune=0.02){
+    nprune <- as.integer(pprune * nsub)
+    ntot <- nsub + nprune
+    Y.idx <- sample(seq(1, nrow(X)), ntot)
+    Y <- X[Y.idx,]
+    all.rows <- lapply(seq(ntot), function(i) Lvec(Y, Y[i,]))
+    K.hat <- do.call('rbind', all.rows)
+    bad.idx <- sort(apply(K.hat, 1, median), index.return=T)$ix[seq(nprune)]
+    Y <- Y[-bad.idx,]
+    K.hat <- K.hat[-bad.idx, -bad.idx]
+    return(list(K.hat=K.hat, Y=Y))
+}
+
 get.K.hat.slow <- function(X, L, nsub=500){
   Y.idx <- sample(seq(1, nrow(X)), nsub)
   Y <- X[Y.idx,]
@@ -312,6 +325,6 @@ spectral.clustering <- function(X, K, L, get.K.hat,
   # compute the centers used to initialize next mcmc iteration
   centers <- center.method(Y, K.hat, clust.res$cluster, K)
   
-  return(list(indicator=fn, centers=centers, eigenvalues=clust.res$eigenvals, n.eigenvecs=clust.res$n.eigenvecs, Y=Y))
+  return(list(indicator=fn, centers=centers, eigenvalues=clust.res$eigenvals, n.eigenvecs=clust.res$n.eigenvecs, Y=Y, clust.clust=clust.res$cluster))
 }
 
