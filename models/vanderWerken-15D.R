@@ -81,3 +81,9 @@ L.vec.sym <- function(new.states, old.state){
 }
 
 
+get.L.vec.sym.power <- function(n){
+    fn <- function(new.states, old.state){
+        return(L.vec.sym(new.states, old.state)^n)
+    }
+    return(fn)
+}
