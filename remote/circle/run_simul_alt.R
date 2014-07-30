@@ -15,6 +15,6 @@ run.simul <- function(i){
     return(ws[1] * colMeans(res.1$X) + ws[2] * colMeans(res.2$X))
 }
 
-res <- do.call('rbind', mclapply(seq(2), run.simul, mc.cores=2))
+res <- do.call('rbind', mclapply(seq(64), run.simul, mc.cores=32))
 
 save(res, file="results/good-alt.rdata")
