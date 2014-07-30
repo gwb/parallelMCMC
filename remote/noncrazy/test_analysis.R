@@ -13,10 +13,13 @@ indicator.fn <- sc$indicator
 # the regular sampling part
 
 run.simul <- function(j){
-    res.1 <- run.mv.mh(sc$centers[1,], 10000, rprop.1, dprop.1, constrained.targets[[1]])
-    res.2 <- run.mv.mh(sc$centers[2,], 10000, rprop.1, dprop.1, constrained.targets[[2]])
-    res.3 <- run.mv.mh(sc$centers[3,], 10000, rprop.1, dprop.1, constrained.targets[[3]])
-    return(ws[1] * colMeans(res.1$X) + ws[2] * colMeans(res.2$X) + ws[3] * colMeans(res.3$X))
+    res <- run.mv.mh(sc$centers[1,], 10000, rprop.1, dprop.1, constrained.targets[[1]])
+    res.1.means <- colMeans(res$X)
+    res <- run.mv.mh(sc$centers[2,], 10000, rprop.1, dprop.1, constrained.targets[[2]])
+    res.2.means <- colMeans(res$X)
+    res <- run.mv.mh(sc$centers[3,], 10000, rprop.1, dprop.1, constrained.targets[[3]])
+    res.3.means <- colMeans(res$X)
+    return(ws[1] * res.1.means + ws[2] * res.2.means + ws[3] * res.3.means)
 }
 
 
