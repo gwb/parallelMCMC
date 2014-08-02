@@ -328,3 +328,15 @@ spectral.clustering <- function(X, K, L, get.K.hat,
   return(list(indicator=fn, centers=centers, eigenvalues=clust.res$eigenvals, n.eigenvecs=clust.res$n.eigenvecs, Y=Y, clust.clust=clust.res$cluster))
 }
 
+voronoi.clustering <- function(X, K){
+  kres <- cluster.kmeans(X, K)
+  centers <- kres$centers
+  fn <- function(x){
+    res <- NULL
+    for(i in seq(nrow(centers))){
+      res <- c(res, sum((centers[i,]-x)^2))
+    }
+    return(as.vector(which.min(res)))
+  }
+  return(list(indicator=fn, centers=centers, cluster=kres$cluster))
+}
