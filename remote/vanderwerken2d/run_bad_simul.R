@@ -74,8 +74,11 @@ init.states.mat <- matrix(rep(c(-5,0),4), nrow=4, byrow=T)
 
 
 run.simul <- function(i){
-    res <- parallel.tempering(targets.ls, single.rproposals.ls, single.dproposals.ls, init.states.mat, 5000)
-    states <- res[[1]][[1]]
+    states <- NULL
+    for(i in seq(1,4)){
+        res <- parallel.tempering(targets.ls, single.rproposals.ls, single.dproposals.ls, init.states.mat, 5000)
+        states <- rbind(states, res[[1]][[1]])
+    }
     return(colMeans(states))
 }
 
