@@ -145,4 +145,4 @@ run.simul <- function(){
 
 ws <- run.simul()
 
-save(ws, dvw, dfn.1, rprop.1, dprop.1, constrained.targets, sc, u.ls, sig.ls, file="results/exploration.rdata")
+save(ws, dvw, dfn.1, rprop.1, dprop.1, dprop.1.vec, constrained.targets, sc, u.ls, sig.ls, file="results/exploration.rdata")
