@@ -126,16 +126,16 @@ compute.weight.i <- function(i, xi){
     sigmat <- cov(xi)
     rq2 <- get.r.centered.proposal(u, sigmat)
     dq2 <- get.d.centered.proposal(u, sigmat)
-    x2 <- rq2(1000)
+    x2 <- rq2(10000)
     res.i <- bridge.sampling.very.fast(constrained.targets[[i]], dq2, xi, x2)
     return(list(res.i))
 }
 
 run.simul <- function(){
-    res.1 <- run.mv.mh(sc$centers[1,], 500, rprop.1, dprop.1, constrained.targets[[1]])
-    res.2 <- run.mv.mh(sc$centers[2,], 500, rprop.1, dprop.1, constrained.targets[[2]])
-    res.3 <- run.mv.mh(sc$centers[3,], 500, rprop.1, dprop.1, constrained.targets[[3]])
-    res.4 <- run.mv.mh(sc$centers[4,], 500, rprop.1, dprop.1, constrained.targets[[4]])
+    res.1 <- run.mv.mh(sc$centers[1,], 2000, rprop.1, dprop.1, constrained.targets[[1]])
+    res.2 <- run.mv.mh(sc$centers[2,], 2000, rprop.1, dprop.1, constrained.targets[[2]])
+    res.3 <- run.mv.mh(sc$centers[3,], 2000, rprop.1, dprop.1, constrained.targets[[3]])
+    res.4 <- run.mv.mh(sc$centers[4,], 2000, rprop.1, dprop.1, constrained.targets[[4]])
     res.ls <- list(res.1$X, res.2$X, res.3$X, res.4$X)
     wis <- unlist(lapply(seq(4), function(i) compute.weight.i(i, res.ls[[i]])))
     wis <- wis / sum(wis)
