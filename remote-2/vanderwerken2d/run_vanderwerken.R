@@ -15,10 +15,10 @@ load('results/exploration.rdata')
 true.mean <- 0.02 * u.ls[[1]] + 0.2 * u.ls[[2]] + 0.2 * u.ls[[3]] + 0.58 * u.ls[[4]]
 
 run.simul <- function(){
-    res.1 <- run.mv.mh(sc$centers[1,], 2000, rprop.1, dprop.1, constrained.targets[[1]])
-    res.2 <- run.mv.mh(sc$centers[2,], 2000, rprop.1, dprop.1, constrained.targets[[2]])
-    res.3 <- run.mv.mh(sc$centers[3,], 2000, rprop.1, dprop.1, constrained.targets[[3]])
-    res.4 <- run.mv.mh(sc$centers[4,], 2000, rprop.1, dprop.1, constrained.targets[[4]])
+    res.1 <- run.mv.mh(sc$centers[1,], 4000, rprop.1, dprop.1, constrained.targets[[1]])
+    res.2 <- run.mv.mh(sc$centers[2,], 4000, rprop.1, dprop.1, constrained.targets[[2]])
+    res.3 <- run.mv.mh(sc$centers[3,], 4000, rprop.1, dprop.1, constrained.targets[[3]])
+    res.4 <- run.mv.mh(sc$centers[4,], 4000, rprop.1, dprop.1, constrained.targets[[4]])
     res.ls <- list(res.1$X, res.2$X, res.3$X, res.4$X)
     return(res.ls)
 }
