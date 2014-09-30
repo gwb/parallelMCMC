@@ -10,25 +10,24 @@ require(mvtnorm)
 args <- commandArgs(trailingOnly=TRUE)
 idx <- as.integer(args[1])
 
-set.seed(123)
-
+load('results/exploration.rdata')
 
 # Define target and all
 
 C <- 4
 d <- 10
 
-sig.ls <- vector('list', C)
-u.ls <- vector('list', C)
+#sig.ls <- vector('list', C)
+#u.ls <- vector('list', C)
 
 w.ls <- c(0.1, 0.2, 0.3, 0.4)
 
-sig.prop <- 0.2*diag(d)
+#sig.prop <- 0.2*diag(d)
 
-for(i in seq(C)){
-    sig.ls[[i]] <- 0.5*diag(d)
-    u.ls[[i]] <- runif(d, min=-10, max=10)
-}
+#for(i in seq(C)){
+#    sig.ls[[i]] <- 0.5*diag(d)
+#    u.ls[[i]] <- runif(d, min=-10, max=10)
+#}
 
 
 # targets
@@ -124,7 +123,7 @@ single.rproposals.ls <- list(rprop.1, rprop.2, rprop.3, rprop.4, rprop.5, rprop.
 single.dproposals.ls <- list(dprop.1, dprop.2, dprop.3, dprop.4, dprop.5, dprop.6)
 init.states.mat <- matrix(rep(u.ls[[1]], 6), nrow=6, byrow=T)
 
-set.seed(123)
+#set.seed(123)
 
 #res <- parallel.tempering(targets.ls, single.rproposals.ls, single.dproposals.ls, init.states.mat, 20000)
 
@@ -133,5 +132,5 @@ states <- res[[1]]
 
 mu.hat <- colMeans(states)
 
-save(mu.hat, file=paste("results/vw_pt/pt", idx, ".rdata", sep=""))
+save(mu.hat, file=paste("results/pt/pt", idx, ".rdata", sep=""))
 
