@@ -95,7 +95,7 @@ get.centers <- function(Y, clusters, nclust){
     }
 
     n.eigenvecs <- t(apply(eigenvecs, 1, function(x) x/sqrt(sum(x^2))))
-    kmeans.res <- kmeans(n.eigenvecs, nclust, iter.max=400, nstart=15)
+    kmeans.res <- kmeans(n.eigenvecs, nclust, iter.max=1000, nstart=15)
     return(list(cluster=kmeans.res$cluster, centers=kmeans.res$centers, n.eigenvecs=n.eigenvecs, eigenvecs=eigenvecs, eigenvals=eigenvals))
 }
 
