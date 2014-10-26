@@ -91,7 +91,7 @@ targets.ls <- list(dfn.1, dfn.2, dfn.3, dfn.4)
 single.rproposals.ls <- list(rprop.1, rprop.2, rprop.3, rprop.4)
 single.dproposals.ls <- list(dprop.1, dprop.2, dprop.3, dprop.4)
 init.states.mat <- matrix(rep(c(-5,0),4), nrow=4, byrow=T)
-res <- parallel.tempering(targets.ls, single.rproposals.ls, single.dproposals.ls, init.states.mat, 10000)
+res <- parallel.tempering(targets.ls, single.rproposals.ls, single.dproposals.ls, init.states.mat, 16000)
 
 
 states <- res[[1]][[1]]
