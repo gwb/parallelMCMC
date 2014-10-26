@@ -9,10 +9,10 @@ idx <- as.integer(args[1])
 
 load('results/exploration.rdata')
 
-res.1 <- run.mv.mh(u.ls[[1]], 5000, rprop.1, dprop.1, dtarget)
-res.2 <- run.mv.mh(u.ls[[2]], 5000, rprop.1, dprop.1, dtarget)
-res.3 <- run.mv.mh(u.ls[[3]], 5000, rprop.1, dprop.1, dtarget)
-res.4 <- run.mv.mh(u.ls[[4]], 5000, rprop.1, dprop.1, dtarget)
+res.1 <- run.mv.mh(u.ls[[1]], 10000, rprop.1, dprop.1, dtarget)
+res.2 <- run.mv.mh(u.ls[[2]], 10000, rprop.1, dprop.1, dtarget)
+res.3 <- run.mv.mh(u.ls[[3]], 10000, rprop.1, dprop.1, dtarget)
+res.4 <- run.mv.mh(u.ls[[4]], 10000, rprop.1, dprop.1, dtarget)
 
 res <- rbind(res.1$X, res.2$X, res.3$X, res.4$X)
 

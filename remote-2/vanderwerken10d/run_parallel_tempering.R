@@ -127,7 +127,7 @@ init.states.mat <- matrix(rep(u.ls[[1]], 6), nrow=6, byrow=T)
 
 #res <- parallel.tempering(targets.ls, single.rproposals.ls, single.dproposals.ls, init.states.mat, 20000)
 
-res <- parallel.tempering.notrace(targets.ls, single.rproposals.ls, single.dproposals.ls, init.states.mat, 35000)
+res <- parallel.tempering.notrace(targets.ls, single.rproposals.ls, single.dproposals.ls, init.states.mat, 40000)
 states <- res[[1]]
 
 mu.hat <- colMeans(states)
