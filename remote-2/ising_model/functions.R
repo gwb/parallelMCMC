@@ -1,7 +1,7 @@
 source('../../clustering.R', chdir=T)
 
 
-E <- function(M){
+E.old <- function(M){
     res <- 0
     for(i in seq(0,N-1)){
         for(j in seq(0,N-1)){
@@ -14,6 +14,20 @@ E <- function(M){
     return(-res)
 }
 
+
+E <- function(M){
+    res <- 0
+    s0Nm1 <- seq(0,N-1)
+    for(i in seq(0,N-1)){
+        idx.down <- 1 + cbind( (i+1) %% N, s0Nm1)
+        idx.right <- 1 + cbind( i , ((1 + s0Nm1) %% N))
+        res <- res + sum(J * M[ cbind(1+i, 1 + s0Nm1) ] * M[idx.right])
+        res <- res + sum(J * M[ cbind(1+i, 1 + s0Nm1) ] * M[idx.down])
+    }
+    return(-res)
+}
+
+
 unnorm.dens.vec <- function(M, Beta=1/(T*k.B), N.spin=N){
     return(exp(- E(matrix(M, nrow=N.spin)) * Beta))
 }
@@ -24,7 +38,28 @@ get.dist <- function(M1, M2){
     return(exp(-delta.M^2))
 }
 
+
 Q <- function(M.vec.1, M.vec.2, size=N){
+    if(!is.null(nrow(M.vec.1))){
+        tmp <- M.vec.2
+        M.vec.2 <- M.vec.1
+        M.vec.1 <- tmp
+    }
+    if(is.null(nrow(M.vec.2))){
+        res <- get.dist(M.vec.2, M.vec.1)
+    } else {
+        res <- NULL
+        for(i in seq(nrow(M.vec.2))){
+            res <- c(res, get.dist(M.vec.1,
+                                   M.vec.2[i,]))
+        }
+    }
+
+    return(res)
+}
+
+
+Q.old <- function(M.vec.1, M.vec.2, size=N){
     if(!is.null(nrow(M.vec.1))){
         tmp <- M.vec.2
         M.vec.2 <- M.vec.1
@@ -229,7 +264,53 @@ get.swap.A.i <- function(M.i, Beta.i, M.j, Beta.j){
     return( min(1, exp( (Beta.i - Beta.j) * (E(M.i) - E(M.j)))) )
 }
 
+
 parallel.tempering <- function(M.0.ls, prop.spin, get.A.i, get.swap.A.i, Beta.ls, niter=100, N.spin=N){
+
+
+    nchains <- length(M.0.ls)
+    samples.ls <- vector('list', nchains)
+    for(i in seq(nchains)){
+        samples.ls[[i]] <- matrix(0, nrow=niter, ncol=length(as.vector(M.0.ls[[1]])))
+    }
+    #M.TM1 <- do.call('rbind', lapply(M.0.ls, function(x) as.vector(x)))
+    M.TM1.ls <- M.0.ls
+    n.accepted.ls <- vector('numeric', nchains)
+    n.swap <- 0
+
+    for(n in seq(niter)){
+        ## Regular State Updates
+        for(i in seq(nchains)){
+            #if(i == 4){browser()}
+            idx.prop <- prop.spin(N.spin)
+            A.i <- get.A.i(M.TM1.ls[[i]], idx.prop, Beta.ls[i])
+            if(runif(1) <= A.i){
+                M.TM1.ls[[i]][t(idx.prop)] <- -M.TM1.ls[[i]][t(idx.prop)]
+                n.accepted.ls[i] <- n.accepted.ls[i] + 1
+            }
+            #samples.ls[[i]] <- rbind(samples.ls[[i]], as.vector(M.TM1.ls[[i]])) 
+        }
+        
+        ## State Swapping Updates
+        indx <- sample(seq(nchains), replace=F)
+        if(runif(1) <= get.swap.A.i(M.TM1.ls[[indx[1]]], Beta.ls[indx[1]], M.TM1.ls[[indx[2]]], Beta.ls[indx[2]])){
+            
+            n.swap <- n.swap + 1
+            tmp <- M.TM1.ls[[indx[1]]]
+            M.TM1.ls[[indx[1]]] <- M.TM1.ls[[indx[2]]]
+            M.TM1.ls[[indx[2]]] <- tmp
+        }
+        
+        for(j in seq(nchains)){
+            samples.ls[[j]][n,] <- as.vector(M.TM1.ls[[j]])
+        }
+    }
+    return(list(samples.ls, n.accepted.ls / niter, n.swap / niter))
+}
+
+
+
+parallel.tempering.old <- function(M.0.ls, prop.spin, get.A.i, get.swap.A.i, Beta.ls, niter=100, N.spin=N){
 
 
     nchains <- length(M.0.ls)
@@ -268,3 +349,4 @@ parallel.tempering <- function(M.0.ls, prop.spin, get.A.i, get.swap.A.i, Beta.ls
     }
     return(list(samples.ls, n.accepted.ls / niter, n.swap / niter))
 }
+

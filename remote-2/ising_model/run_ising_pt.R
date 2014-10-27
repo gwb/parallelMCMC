@@ -18,7 +18,7 @@ print("Running parallel tempering")
 Beta.ls <- 1 / c(Beta, 2, 2.4)
 M.0 <- matrix(rep(1,N^2), nrow=N)#matrix(sample(c(-1,1), size=N^2, replace=T), nrow=N)
 M.0.ls <- lapply(seq(length(Beta.ls)), function(i) M.0)
-res.pt <- parallel.tempering(M.0.ls, prop.spin, .get.A.i, get.swap.A.i, Beta.ls, niter=40000, N.spin = N)
+res.pt <- parallel.tempering(M.0.ls, prop.spin, .get.A.i, get.swap.A.i, Beta.ls, niter=70000, N.spin = N)
 ### End Parallel Tempering
 
 
