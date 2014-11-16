@@ -201,8 +201,8 @@ plot.vhd.clusters <- function(dt, cluster.fn = NULL, clust=NULL, centers=NULL){
 }
 
 
-plot.vhd.no.clusters <- function(dt, centers=NULL){
-  nproj <- 5
+plot.vhd.no.clusters <- function(dt, centers=NULL, nproj=5){
+  #nproj <- 5
   
   dt.dim <- ncol(dt)
   
