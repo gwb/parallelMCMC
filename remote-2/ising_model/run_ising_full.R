@@ -3,14 +3,15 @@ source('../../bridge-sampling.R', chdir=T)
 
 ### Begin Parameters
 N <- 3
-Beta <- 1 / 1.3
+kbT <- 2.2
+Beta <- 1 / kbT
 J <- 1
 ### End Parameter
 
 
 ### Begin Parallel Tempering
 print("Running parallel tempering")
-Beta.ls <- 1 / c(Beta, 2, 2.4)
+Beta.ls <- 1 / c(kbT, 2.25, 2.4)
 M.0 <- matrix(rep(1,N^2), nrow=N)#matrix(sample(c(-1,1), size=N^2, replace=T), nrow=N)
 M.0.ls <- lapply(seq(length(Beta.ls)), function(i) M.0)
 res.pt <- parallel.tempering(M.0.ls, prop.spin, .get.A.i, get.swap.A.i, Beta.ls, niter=30000, N.spin = N)
